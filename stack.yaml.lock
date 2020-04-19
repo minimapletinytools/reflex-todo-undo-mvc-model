@@ -82,19 +82,19 @@ packages:
   original:
     hackage: smash-0.1.1.0
 - completed:
-    size: 28846
-    url: https://github.com/pdlla/potato_flow/archive/c0eb69c7a51751b78fab6fff435b11f07f5fca1e.tar.gz
+    size: 28950
+    url: https://github.com/pdlla/potato_flow/archive/83dfc6cdf5fa6dd9fe43314f0e9f95e693b5f440.tar.gz
     cabal-file:
       size: 3851
       sha256: d40e72274e6a40e35d6dcd9324d59e6d5c10e23f3f64479aec39593aeb0fe1b8
     name: potato-flow
     version: 0.1.0.0
-    sha256: cc87873c31125e1779107ccaa0485e2be66cdaf7e793009ec1aba98d34003f3b
+    sha256: 911fec47d42c295d7021392712960a85d420078d77892e75912e31889e39b5dd
     pantry-tree:
       size: 2312
-      sha256: df3ecd18f32764572f4200724f796555809b8c32d49cf561eea3deb144a0fba7
+      sha256: 726813f9aefaede1a24c333174920f839c020b4acaae37df3c081b9790baeedc
   original:
-    url: https://github.com/pdlla/potato_flow/archive/c0eb69c7a51751b78fab6fff435b11f07f5fca1e.tar.gz
+    url: https://github.com/pdlla/potato_flow/archive/83dfc6cdf5fa6dd9fe43314f0e9f95e693b5f440.tar.gz
 - completed:
     size: 11789
     url: https://github.com/pdlla/reflex-basic-host/archive/9500e9322d7b179f9aa4b08ae2e8bb3b7faf0c6a.tar.gz

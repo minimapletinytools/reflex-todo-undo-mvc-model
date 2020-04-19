@@ -60,7 +60,7 @@ basic_test = TestLabel "basic" $ TestCase $ do
     run :: IO [[Maybe [Todo]]]
     run = basicHostWithStaticEvents bs todoredo_network
   v <- liftIO run
-  print v
+  print (L.last v)
   return ()
   --L.last v @?= Just 103
 

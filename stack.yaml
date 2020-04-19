@@ -53,7 +53,7 @@ extra-deps:
 - smash-0.1.1.0
 # TODO switch this to split out libraries when that happens
 - github: pdlla/potato_flow
-  commit: c0eb69c7a51751b78fab6fff435b11f07f5fca1e
+  commit: 83dfc6cdf5fa6dd9fe43314f0e9f95e693b5f440
 - github: pdlla/reflex-basic-host
   commit: 9500e9322d7b179f9aa4b08ae2e8bb3b7faf0c6a
 

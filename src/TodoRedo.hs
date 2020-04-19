@@ -15,12 +15,13 @@ import           Relude.Extra.Map
 
 import           Reflex
 import           Reflex.Data.ActionStack
-import           Reflex.Data.List
+import           Reflex.Data.Sequence
 import           Reflex.Potato.Helpers
 
 import           Control.Monad.Fix
 
 import qualified Data.List               as L
+import qualified Data.Sequence as Seq
 
 data Todo = Todo {
   description :: Text
@@ -97,47 +98,62 @@ holdTodo TodoRedoConfig {..} = mdo
     undoAction :: Event t (TRCmd t)
     undoAction = _actionStack_undo as
 
-    -- undoing a TRCNew is just popping top element
-    popUndoSelect = \case
-      TRCNew x -> Just x
-      _ -> Nothing
-    popUndoEv = fmapMaybe popUndoSelect undoAction
-
     -- the only time we add a new element
-    addDoSelect = \case
+    newEvSelect = \case
       TRCNew x -> Just x
       _ -> Nothing
-    addNewEv = fmapMaybe addDoSelect doAction
+    addNewEv = fmapMaybe newEvSelect doAction
 
-    -- put back element we removed
-    addUndoSelect = \case
-      TRCDelete x -> Just x
-      _ -> Nothing
+    -- DynamicSeq event selectors
+    -- --------------------------
+    insert_do_push = \case
+      TRCNew x -> do
+        -- add to end
+        s <- sample . current $ _dynamicSeq_contents todosDyn
+        return $ Just (Seq.length s, Seq.singleton x)
+      _ -> return Nothing
+    insert_do_ev = push insert_do_push doAction
 
-    -- take element that was removed and put it back on
-    pushUndoSelect = \case
-      TRCNew x -> Just x
-      _ -> Nothing
+    insert_undo_push = \case
+      -- put back element we just removed
+      TRCDelete (n,x) -> return $ Just (n, Seq.singleton x)
+      _ -> return Nothing
+    insert_undo_ev = push insert_undo_push undoAction
 
     -- remove an element, note the snd tuple arg is needed for Undo so we ignore it
-    removeDoSelect = \case
-      TRCDelete (n, _) -> Just n
-      _ -> Nothing
+    remove_do_push = \case
+      TRCDelete (n, _) -> return $ Just (n, 1)
+      _ -> return Nothing
+    remove_do_ev = push remove_do_push doAction
 
+    remove_undo_push = \case
+      TRCNew _ -> do
+        -- remove from end
+        s <- sample . current $ _dynamicSeq_contents todosDyn
+        return $ Just (Seq.length s - 1, 1)
+      _ -> return Nothing
+    remove_undo_ev = push remove_undo_push undoAction
+
+    -- DynamicSeq repeated event selectors
+    -- --------------------------
+    -- TODO clear completed, use repeatEventAndCollectOutput
+
+
+    -- DynTodo event selectors
+    -- --------------------------
     -- maps tick/untick list index to Todo identifier
     -- we just toggle on do/undo so we don't need to distinguish between do and undo
     tickDoUndoPushSelect :: TRCmd t -> PushM t (Maybe UID)
     tickDoUndoPushSelect = let
         toggleFn index = do
-          tdl <- sample . current $ _dynamicList_contents todosDyn
-          return . Just . dtId $ tdl L.!! (length tdl - index - 1)
+          tds <- sample . current $ _dynamicSeq_contents todosDyn
+          return . Just . dtId $ Seq.index tds (Seq.length tds - index - 1)
       in
         \case
           -- TODO switch to guards to remove copypasta
           TRCTick index -> toggleFn index
           TRCUntick index -> toggleFn index
           _ -> return Nothing where
-
 
     makeDynTodo :: Text -> PushM t (DynTodo t)
     makeDynTodo s = do
@@ -157,31 +173,32 @@ holdTodo TodoRedoConfig {..} = mdo
     -- should be OK as this is similar to `attach` and not `attachPromptly`
     findDynTodo :: Int -> PushM t (Int, DynTodo t)
     findDynTodo index = do
-      tdl <- sample . current . _dynamicList_contents $ todosDyn
-      return $ (index, tdl L.!! (length tdl - index - 1))
+      tds <- sample . current . _dynamicSeq_contents $ todosDyn
+      return $ (index, Seq.index tds (Seq.length tds - index - 1))
 
-    dlc = defaultDynamicListConfig {
-        _dynamicListConfig_add = fmapMaybe addUndoSelect undoAction
-        , _dynamicListConfig_remove = fmapMaybe removeDoSelect doAction
-        , _dynamicListConfig_push = leftmost [addNewEv, fmapMaybe pushUndoSelect doAction]
-        , _dynamicListConfig_pop = void popUndoEv
-      }
 
+  -- create dynamics
+  -- --------------------------
+  -- TODO switch this to use DirectoryIdAssigner
   uidDyn :: Dynamic t UID <-
     foldDyn (+) 0 (fmap (const 1) addNewEv)
 
 
-  --[H,A,B]   simpleList  ::                Dynamic       [v] -> (     Dynamic v -> m        a ) -> m (Dynamic       [a])
+  let
+    dsc = DynamicSeqConfig {
+        _dynamicSeqConfig_insert   = leftmost [insert_do_ev, insert_undo_ev]
+        , _dynamicSeqConfig_remove = leftmost [remove_do_ev, remove_undo_ev]
+        , _dynamicSeqConfig_clear  = never
+      }
 
-  -- TODO change to Dynamic t (Map Int DynTodo)
   -- note that internal representation is in reverse order
-  todosDyn :: DynamicList t (DynTodo t)
-    <- holdDynamicList [] dlc
+  todosDyn :: DynamicSeq t (DynTodo t)
+    <- holdDynamicSeq Seq.empty dsc
 
   -- assemble the final behavior
   let
     contents :: Dynamic t [DynTodo t]
-    contents = _dynamicList_contents todosDyn
+    contents = toList <$> _dynamicSeq_contents todosDyn
 
     descriptions :: Dynamic t [Text]
     descriptions = dtDesc <<$>> contents
