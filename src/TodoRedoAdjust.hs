@@ -1,7 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RecursiveDo     #-}
 
-module TodoRedo (
+-- same as TodoRedo but uses an adjustable list internally
+module TodoRedoAdjust (
   Todo(..)
   , TodoRedoConfig(..)
   , TodoRedo(..)
@@ -67,7 +68,7 @@ data TRCmd t = TRCNew (DynTodo t) | TRCDelete (Int, DynTodo t) | TRCClearComplet
 type UID = Int
 
 holdTodo ::
-  forall t m a. (Reflex t, MonadHold t m, MonadFix m)
+  forall t m a. (Reflex t, MonadHold t m, MonadFix m, Adjustable t m, PostBuild t m)
   => TodoRedoConfig t
   -> m (TodoRedo t)
 holdTodo TodoRedoConfig {..} = mdo
@@ -168,6 +169,9 @@ holdTodo TodoRedoConfig {..} = mdo
 
   uidDyn :: Dynamic t UID <-
     foldDyn (+) 0 (fmap (const 1) addNewEv)
+
+
+  --[H,A,B]   simpleList  ::                Dynamic       [v] -> (     Dynamic v -> m        a ) -> m (Dynamic       [a])
 
   -- TODO change to Dynamic t (Map Int DynTodo)
   -- note that internal representation is in reverse order

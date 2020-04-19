@@ -68,6 +68,13 @@ packages:
   original:
     hackage: witherable-0.3.1@sha256:ed3d5bc9eb1c08fa9704d9e143cdf622e1bd80b847cd5ede8c07da7bc7981ab9,1313
 - completed:
+    hackage: dependent-sum-template-0.1.0.3@sha256:0bbbacdfbd3abf2a15aaf0cf2c27e5bdd159b519441fec39e1e6f2f54424adde,1682
+    pantry-tree:
+      size: 436
+      sha256: 32eeadeb991a290a1da41ce7e995dee7d38ebba3bd3e53ea8074c32c086701fd
+  original:
+    hackage: dependent-sum-template-0.1.0.3@sha256:0bbbacdfbd3abf2a15aaf0cf2c27e5bdd159b519441fec39e1e6f2f54424adde,1682
+- completed:
     hackage: smash-0.1.1.0@sha256:593381bad038ff93898a8a1422c6e81fc4a2a6fb23b64afa2f758f56607b83dc,1583
     pantry-tree:
       size: 481
@@ -75,19 +82,33 @@ packages:
   original:
     hackage: smash-0.1.1.0
 - completed:
-    size: 17137
-    url: https://github.com/pdlla/potato_flow/archive/9fc4616dda4d668baeeee9bd402aa6d20ec508e7.tar.gz
+    size: 28846
+    url: https://github.com/pdlla/potato_flow/archive/c0eb69c7a51751b78fab6fff435b11f07f5fca1e.tar.gz
     cabal-file:
-      size: 3382
-      sha256: 34f606ef3eb4cba2a1aa4e39b00a9d7fc7b11fd4c9e315d05b0564267919544c
+      size: 3851
+      sha256: d40e72274e6a40e35d6dcd9324d59e6d5c10e23f3f64479aec39593aeb0fe1b8
     name: potato-flow
     version: 0.1.0.0
-    sha256: 49b991abbb69c71917fd9674329e1062eb94111d8b5958f836fe4f0b467759dd
+    sha256: cc87873c31125e1779107ccaa0485e2be66cdaf7e793009ec1aba98d34003f3b
     pantry-tree:
-      size: 1733
-      sha256: 13d76e790374fd564c0aba52aa678c1b09cac5d02a453b6b04331d0a5fcb3037
+      size: 2312
+      sha256: df3ecd18f32764572f4200724f796555809b8c32d49cf561eea3deb144a0fba7
   original:
-    url: https://github.com/pdlla/potato_flow/archive/9fc4616dda4d668baeeee9bd402aa6d20ec508e7.tar.gz
+    url: https://github.com/pdlla/potato_flow/archive/c0eb69c7a51751b78fab6fff435b11f07f5fca1e.tar.gz
+- completed:
+    size: 11789
+    url: https://github.com/pdlla/reflex-basic-host/archive/9500e9322d7b179f9aa4b08ae2e8bb3b7faf0c6a.tar.gz
+    cabal-file:
+      size: 3247
+      sha256: 2567b8137651c7c2663f69a6bee280dab5b6fbb211552662b948dfdb1cb48579
+    name: reflex-basic-host
+    version: 0.2.0.1
+    sha256: 0cdc2b6b6a373d3b8ba6edb65fe669e8fd70c7172dbeadbc5f06ffa230958e8f
+    pantry-tree:
+      size: 992
+      sha256: a47e7fae7ae5bcdff1acc0e856cb8c81cb9e273bdcdebdac562f0b603b30131a
+  original:
+    url: https://github.com/pdlla/reflex-basic-host/archive/9500e9322d7b179f9aa4b08ae2e8bb3b7faf0c6a.tar.gz
 snapshots:
 - completed:
     size: 491389
