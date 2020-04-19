@@ -90,7 +90,6 @@ todoUndoConnect (TodoUndoConnector cx) (TodoUndo todos) trc = trc {
     , _trconfig_untick = snd . cx $ todos
   }
 
--- TODO change to TRCClearCompleted  [DynTodo t]
 data TRAppCmd = TRAUndo | TRARedo
 data TRCmd t = TRCNew (DynTodo t) | TRCDelete (Int, DynTodo t) | TRCClearCompleted | TRCTick Int | TRCUntick Int
 
@@ -169,7 +168,6 @@ holdTodo TodoUndoConfig {..} = mdo
       _ -> Nothing
     clear_do_ev' = fmapMaybe select_TRCClearCompleted doAction
     clear_undo_ev' = fmapMaybe select_TRCClearCompleted undoAction
-    -- TODO this needs to cache the things we removed so we can put them back
     clear_do_push _ = do
       s <- sample . current $ _dynamicSeq_contents todosDyn
       let
@@ -196,7 +194,6 @@ holdTodo TodoUndoConfig {..} = mdo
           return . Just . dtId $ Seq.index tds index
       in
         \case
-          -- TODO switch to guards to remove copypasta
           TRCTick index -> toggleFn index
           TRCUntick index -> toggleFn index
           _ -> return Nothing where
@@ -235,14 +232,13 @@ holdTodo TodoUndoConfig {..} = mdo
     clearedStackConfig = DynamicStackConfig {
         _dynamicStackConfig_push = clear_do_ev
       , _dynamicStackConfig_pop = clear_undo_ev
-      , _dynamicStackConfig_clear = never -- TODO connect to action stack clear event
+      , _dynamicStackConfig_clear = _actionStack_clear as
     }
   clearedStack :: DynamicStack t [(Int, DynTodo t)]
     <- holdDynamicStack [] clearedStackConfig
   remove_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForRemoval $ _dynamicStack_pushed clearedStack
   add_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForAddition $ _dynamicStack_popped clearedStack
   let
-    -- TODO need to fix indices
     remove_many_ev :: Event t (Int, Int)
     remove_many_ev = fmap (\(i,_) -> (i,1)) remove_many_ev'
     add_many_ev :: Event t (Int, Seq (DynTodo t))

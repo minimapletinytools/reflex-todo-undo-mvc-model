@@ -6,16 +6,15 @@ module TodoUndoSpec (
 import           Relude
 
 import           Test.Hspec
-import           Test.Hspec.Contrib.HUnit  (fromHUnitTest)
+import           Test.Hspec.Contrib.HUnit (fromHUnitTest)
 import           Test.HUnit
 
 import           Reflex
 import           Reflex.Host.Basic
-import           Reflex.Potato.TestHarness
 
 
-import qualified Data.List                 as L
-import           Data.Maybe                (fromJust)
+--import qualified Data.List                 as L
+--import           Data.Maybe                (fromJust)
 import           TodoUndo
 
 
@@ -65,11 +64,16 @@ basic_test = TestLabel "basic" $ TestCase $ do
       New "4", New "5", -- [t1,f2,f4,f5]
       Tick 3, -- [t1,f2,f4,t5]
       Clear, Undo, Redo, -- [f2,f4]
-      New "6"] -- [f2,f4,f6]
+      New "6", -- [f2,f4,f6]
+      Undo,
+      New "7", -- [f2,f4,f7]
+      Redo,
+      New "8" -- [f2,f4,f7,f8] (nothing to redo)
+      ]
     run :: IO [[Maybe [Todo]]]
     run = basicHostWithStaticEvents bs todoredo_network
   v <- liftIO run
-  mapM_ (print . fmap fromJust) (v)
+  mapM_ print (v)
   return ()
   --L.last v @?= Just 103
 
