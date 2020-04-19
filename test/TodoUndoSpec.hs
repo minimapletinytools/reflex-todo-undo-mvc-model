@@ -1,5 +1,5 @@
 {-# LANGUAGE RecursiveDo #-}
-module TodoRedoSpec (
+module TodoUndoSpec (
   spec
 ) where
 
@@ -16,7 +16,7 @@ import           Reflex.Potato.TestHarness
 
 import qualified Data.List                 as L
 import           Data.Maybe                (fromJust)
-import           TodoRedo
+import           TodoUndo
 
 
 -- N.B. Clear is not implemented yet
@@ -26,7 +26,7 @@ data AppCmd = New Text | Clear | Undo | Redo | Tick Int | Untick Int | Remove In
 todoredo_network :: forall t m. BasicGuestConstraints t m => Event t AppCmd -> BasicGuest t m (Event t [Todo])
 todoredo_network ev = do
   let
-    trc = TodoRedoConfig {
+    trc = TodoUndoConfig {
         _trconfig_new = flip fmapMaybe ev $ \case
           New s -> Just s
           _ -> Nothing

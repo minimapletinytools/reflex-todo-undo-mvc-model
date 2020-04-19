@@ -1,12 +1,12 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RecursiveDo     #-}
 
--- same as TodoRedo but uses an adjustable list internally
-module TodoRedo (
+-- same as TodoUndo but uses an adjustable list internally
+module TodoUndo (
   Todo(..)
-  , TodoRedoConfig(..)
-  , TodoRedo(..)
-  , todoRedoConnect
+  , TodoUndoConfig(..)
+  , TodoUndo(..)
+  , todoUndoConnect
   , holdTodo
 ) where
 
@@ -65,7 +65,7 @@ data DynTodo t = DynTodo {
   , dtIsDone :: Dynamic t Bool
 }
 
-data TodoRedoConfig t = TodoRedoConfig {
+data TodoUndoConfig t = TodoUndoConfig {
   -- input
   _trconfig_new              :: Event t Text
   , _trconfig_clearCompleted :: Event t ()
@@ -76,16 +76,16 @@ data TodoRedoConfig t = TodoRedoConfig {
   , _trconfig_remove         :: Event t Int
 }
 
-data TodoRedo t = TodoRedo {
+data TodoUndo t = TodoUndo {
   _tr_todos :: Dynamic t [Todo]
 }
 
-data TodoRedoConnector t = TodoRedoConnector {
+data TodoUndoConnector t = TodoUndoConnector {
   _trconnector_todo_connector_tick :: Dynamic t [Todo] -> (Event t Int, Event t Int)
 }
 
-todoRedoConnect :: TodoRedoConnector t -> TodoRedo t -> TodoRedoConfig t -> TodoRedoConfig t
-todoRedoConnect (TodoRedoConnector cx) (TodoRedo todos) trc = trc {
+todoUndoConnect :: TodoUndoConnector t -> TodoUndo t -> TodoUndoConfig t -> TodoUndoConfig t
+todoUndoConnect (TodoUndoConnector cx) (TodoUndo todos) trc = trc {
     _trconfig_tick = fst . cx $ todos
     , _trconfig_untick = snd . cx $ todos
   }
@@ -98,9 +98,9 @@ type UID = Int
 
 holdTodo ::
   forall t m a. (Reflex t, MonadHold t m, MonadFix m, Adjustable t m, PostBuild t m)
-  => TodoRedoConfig t
-  -> m (TodoRedo t)
-holdTodo TodoRedoConfig {..} = mdo
+  => TodoUndoConfig t
+  -> m (TodoUndo t)
+holdTodo TodoUndoConfig {..} = mdo
   let
     docmds = leftmostwarn "WARNING: received multiple commands at once" [
       -- construct element to put on
@@ -272,4 +272,4 @@ holdTodo TodoRedoConfig {..} = mdo
     doneStates :: Dynamic t [Bool]
     doneStates = join . fmap sequence $ dtIsDone <<$>> contents
 
-  return $ TodoRedo $ ffor2 descriptions doneStates (zipWith Todo)
+  return $ TodoUndo $ ffor2 descriptions doneStates (zipWith Todo)
