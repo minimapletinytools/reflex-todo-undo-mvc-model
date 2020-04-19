@@ -10,16 +10,20 @@ import           Test.Hspec.Contrib.HUnit  (fromHUnitTest)
 import           Test.HUnit
 
 import           Reflex
+import           Reflex.Host.Basic
 import           Reflex.Potato.TestHarness
+
 
 import qualified Data.List                 as L
 
 import           TodoRedo
 
--- N.B. Clear is not implemented yet
-data AppCmd = New Text | Clear | Undo | Redo | Tick Int | Untick Int | Remove Int
 
-todoredo_network :: forall t m. TestApp t m AppCmd [Todo]
+-- N.B. Clear is not implemented yet
+data AppCmd = New Text | Clear | Undo | Redo | Tick Int | Untick Int | Remove Int deriving (Show)
+
+
+todoredo_network :: forall t m. BasicGuestConstraints t m => Event t AppCmd -> BasicGuest t m (Event t [Todo])
 todoredo_network ev = do
   let
     trc = TodoRedoConfig {
@@ -50,14 +54,15 @@ todoredo_network ev = do
 
 basic_test :: Test
 basic_test = TestLabel "basic" $ TestCase $ do
+  return ()
   let
     bs = [New "1", New "2", New "3", Undo, Undo, Redo, Tick 0]
-    run = playReflexSeq bs todoredo_network
+    run :: IO [[Maybe [Todo]]]
+    run = basicHostWithStaticEvents bs todoredo_network
   v <- liftIO run
   print v
   return ()
   --L.last v @?= Just 103
-
 
 spec :: Spec
 spec = do

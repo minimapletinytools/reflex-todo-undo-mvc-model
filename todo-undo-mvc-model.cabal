@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d9cf8a66c769e99461f91a3e3c7c9c9904438c9d7b44d758fa6a74e8afc57851
+-- hash: 741b332c6d842d43ab8f73127e5f4c4a7cada66d79f8a65f98269364c9e330a2
 
 name:           todo-undo-mvc-model
 version:        0.1.0.0
@@ -28,7 +28,6 @@ source-repository head
 library
   exposed-modules:
       TodoRedo
-      TodoRedoAdjust
   other-modules:
       Paths_todo_undo_mvc_model
   hs-source-dirs:
@@ -47,7 +46,6 @@ test-suite todo-undo-mvc-model-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      TodoRedoAdjustSpec
       TodoRedoSpec
       Paths_todo_undo_mvc_model
   hs-source-dirs:
