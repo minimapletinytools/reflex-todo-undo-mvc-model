@@ -16,17 +16,45 @@ import           Relude.Extra.Map
 import           Reflex
 import           Reflex.Data.ActionStack
 import           Reflex.Data.Sequence
+import Reflex.Data.Stack
 import           Reflex.Potato.Helpers
 
 import           Control.Monad.Fix
+import Control.Exception (assert)
 
 import qualified Data.List               as L
 import qualified Data.Sequence as Seq
+import Data.Foldable (foldrM)
+import qualified Text.Show
+import qualified Data.Text
+
+-- helper methods
+foldrWithIndexM :: forall a b m. (Monad m) =>  (Int -> a -> b -> m b) -> b -> Seq a -> m b
+foldrWithIndexM f z xs = do
+  -- internal fold function has type 'a -> (Int -> m b) -> m (Int -> m b)'
+  r <- foldrM ((\x g -> return (\ !i -> g (i+1) >>= f i x))) (const (return z)) xs
+  r 0
+
+
+-- | reindexes indices such that each element is indexed as if all previous elements have been removed, O(n^2) lol
+reindexForRemoval :: [(Int, a)] -> [(Int, a)]
+reindexForRemoval [] = []
+reindexForRemoval (r:xs) = r:reindexForRemoval rest where
+  -- if this asserts that means you tried to remove the same index twice
+  rest = map (\(x, a) -> assert (x /= fst r) $ if x > fst r then (x-1,a) else (x,a)) xs
+
+-- TODO make sure this is correct lol
+reindexForAddition :: [(Int, a)] -> [(Int, a)]
+reindexForAddition = reverse . reindexForRemoval . reverse
+
 
 data Todo = Todo {
   description :: Text
   , isDone    :: Bool
-} deriving Show
+}
+
+instance Show Todo where
+  show (Todo d s) = Data.Text.unpack $ (if s then "t" else "f") <> d
 
 -- each DynTodo element in the network has a dynamic var representing its state
 -- note that it's possible to do a simpler first-order implementation where states are tracked in a separate dynamic
@@ -40,7 +68,7 @@ data DynTodo t = DynTodo {
 data TodoRedoConfig t = TodoRedoConfig {
   -- input
   _trconfig_new              :: Event t Text
-  , _trconfig_clearCompleted :: Event t () -- NOT IMPLEMENTED!!!
+  , _trconfig_clearCompleted :: Event t ()
   , _trconfig_undo           :: Event t ()
   , _trconfig_redo           :: Event t ()
   , _trconfig_tick           :: Event t Int
@@ -136,8 +164,26 @@ holdTodo TodoRedoConfig {..} = mdo
 
     -- DynamicSeq repeated event selectors
     -- --------------------------
-    -- TODO clear completed, use repeatEventAndCollectOutput
-
+    select_TRCClearCompleted = \case
+      TRCClearCompleted -> Just ()
+      _ -> Nothing
+    clear_do_ev' = fmapMaybe select_TRCClearCompleted doAction
+    clear_undo_ev' = fmapMaybe select_TRCClearCompleted undoAction
+    -- TODO this needs to cache the things we removed so we can put them back
+    clear_do_push _ = do
+      s <- sample . current $ _dynamicSeq_contents todosDyn
+      let
+        foldfn :: Int -> DynTodo t -> [(Int, DynTodo t)] -> PushM t [(Int, DynTodo t)]
+        foldfn i dyntodo xs = do
+          done <- sample . current $ dtIsDone dyntodo
+          if done
+            then return $ (i,dyntodo):xs
+            else return $ xs
+      foldrWithIndexM foldfn [] s
+    clear_do_ev :: Event t [(Int, DynTodo t)]
+    clear_do_ev = pushAlways clear_do_push clear_do_ev'
+    clear_undo_ev :: Event t ()
+    clear_undo_ev = clear_undo_ev'
 
     -- DynTodo event selectors
     -- --------------------------
@@ -147,7 +193,7 @@ holdTodo TodoRedoConfig {..} = mdo
     tickDoUndoPushSelect = let
         toggleFn index = do
           tds <- sample . current $ _dynamicSeq_contents todosDyn
-          return . Just . dtId $ Seq.index tds (Seq.length tds - index - 1)
+          return . Just . dtId $ Seq.index tds index
       in
         \case
           -- TODO switch to guards to remove copypasta
@@ -174,20 +220,41 @@ holdTodo TodoRedoConfig {..} = mdo
     findDynTodo :: Int -> PushM t (Int, DynTodo t)
     findDynTodo index = do
       tds <- sample . current . _dynamicSeq_contents $ todosDyn
-      return $ (index, Seq.index tds (Seq.length tds - index - 1))
+      return $ (index, Seq.index tds index)
 
 
-  -- create dynamics
+  -- create id assigner
   -- --------------------------
   -- TODO switch this to use DirectoryIdAssigner
   uidDyn :: Dynamic t UID <-
     foldDyn (+) 0 (fmap (const 1) addNewEv)
 
+  -- create clear completed stack
+  -- ----------------------
+  let
+    clearedStackConfig = DynamicStackConfig {
+        _dynamicStackConfig_push = clear_do_ev
+      , _dynamicStackConfig_pop = clear_undo_ev
+      , _dynamicStackConfig_clear = never -- TODO connect to action stack clear event
+    }
+  clearedStack :: DynamicStack t [(Int, DynTodo t)]
+    <- holdDynamicStack [] clearedStackConfig
+  remove_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForRemoval $ _dynamicStack_pushed clearedStack
+  add_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForAddition $ _dynamicStack_popped clearedStack
+  let
+    -- TODO need to fix indices
+    remove_many_ev :: Event t (Int, Int)
+    remove_many_ev = fmap (\(i,_) -> (i,1)) remove_many_ev'
+    add_many_ev :: Event t (Int, Seq (DynTodo t))
+    add_many_ev = fmap (\(i,e) -> (i,Seq.singleton e)) add_many_ev'
 
+
+  -- create DynamicSeq
+  -- ----------------------
   let
     dsc = DynamicSeqConfig {
-        _dynamicSeqConfig_insert   = leftmost [insert_do_ev, insert_undo_ev]
-        , _dynamicSeqConfig_remove = leftmost [remove_do_ev, remove_undo_ev]
+        _dynamicSeqConfig_insert   = leftmost [insert_do_ev, insert_undo_ev, add_many_ev]
+        , _dynamicSeqConfig_remove = leftmost [remove_do_ev, remove_undo_ev, remove_many_ev]
         , _dynamicSeqConfig_clear  = never
       }
 
@@ -196,14 +263,13 @@ holdTodo TodoRedoConfig {..} = mdo
     <- holdDynamicSeq Seq.empty dsc
 
   -- assemble the final behavior
+  ------------------------------
   let
     contents :: Dynamic t [DynTodo t]
     contents = toList <$> _dynamicSeq_contents todosDyn
-
     descriptions :: Dynamic t [Text]
     descriptions = dtDesc <<$>> contents
-
     doneStates :: Dynamic t [Bool]
     doneStates = join . fmap sequence $ dtIsDone <<$>> contents
 
-  return $ TodoRedo . fmap reverse $ ffor2 descriptions doneStates (zipWith Todo)
+  return $ TodoRedo $ ffor2 descriptions doneStates (zipWith Todo)

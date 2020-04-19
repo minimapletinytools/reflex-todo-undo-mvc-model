@@ -15,7 +15,7 @@ import           Reflex.Potato.TestHarness
 
 
 import qualified Data.List                 as L
-
+import           Data.Maybe                (fromJust)
 import           TodoRedo
 
 
@@ -56,11 +56,20 @@ basic_test :: Test
 basic_test = TestLabel "basic" $ TestCase $ do
   return ()
   let
-    bs = [New "1", New "2", New "3", Undo, Undo, Redo, Tick 0]
+    bs = [
+      New "1",
+      New "2",
+      New "3", -- [f1,f2,f3]
+      Undo, Undo, Redo, -- [f1,f2]
+      Tick 0, -- [t1,f2]
+      New "4", New "5", -- [t1,f2,f4,f5]
+      Tick 3, -- [t1,f2,f4,t5]
+      Clear, Undo, Redo, -- [f2,f4]
+      New "6"] -- [f2,f4,f6]
     run :: IO [[Maybe [Todo]]]
     run = basicHostWithStaticEvents bs todoredo_network
   v <- liftIO run
-  print (L.last v)
+  mapM_ (print . fmap fromJust) (v)
   return ()
   --L.last v @?= Just 103
 
