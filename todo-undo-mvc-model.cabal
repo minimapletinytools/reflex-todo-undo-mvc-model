@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5ced56546bbc96bb980d8f2e6248af6a1a018b1fcec9be334f2ceb60fdf4130b
+-- hash: 46b290ab76ffac58edd8ec952b1e89f9841f1fdbbbb9ae67822d1038f6fb09c7
 
 name:           todo-undo-mvc-model
 version:        0.1.0.0
@@ -41,6 +41,25 @@ library
     , reflex
     , relude
     , text
+  default-language: Haskell2010
+
+executable memorytests
+  main-is: main.hs
+  other-modules:
+      Paths_todo_undo_mvc_model
+  hs-source-dirs:
+      app
+  default-extensions: ApplicativeDo BangPatterns DataKinds ConstraintKinds DeriveFoldable DeriveFunctor DeriveTraversable DeriveGeneric DeriveLift DeriveTraversable DerivingStrategies EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns OverloadedStrings PatternSynonyms RankNTypes ScopedTypeVariables StandaloneDeriving TupleSections TypeApplications TypeFamilies TypeFamilyDependencies TypeOperators NoImplicitPrelude
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -with-rtsopts=-T
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , potato-flow
+    , reflex
+    , relude
+    , text
+    , these
+    , todo-undo-mvc-model
   default-language: Haskell2010
 
 test-suite todo-undo-mvc-model-test

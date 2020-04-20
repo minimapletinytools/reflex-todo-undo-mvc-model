@@ -77,8 +77,22 @@ dependencies:
 - containers
 - text
 
+
 library:
   source-dirs: src
+
+executables:
+  memorytests:
+    main: main.hs
+    source-dirs: app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -with-rtsopts=-T
+    dependencies:
+    - todo-undo-mvc-model
+    - these
 
 tests:
   todo-undo-mvc-model-test:
