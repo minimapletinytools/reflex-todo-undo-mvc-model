@@ -10,7 +10,7 @@ import           Test.Hspec.Contrib.HUnit (fromHUnitTest)
 import           Test.HUnit
 
 import           Reflex
-import           Reflex.Host.Basic
+import           Reflex.Test.App
 
 
 --import qualified Data.List                 as L
@@ -21,8 +21,8 @@ import           TodoUndo
 -- N.B. Clear is not implemented yet
 data AppCmd = New Text | Clear | Undo | Redo | Tick Int | Untick Int | Remove Int deriving (Show)
 
-
-todoredo_network :: forall t m. BasicGuestConstraints t m => Event t AppCmd -> BasicGuest t m (Event t [Todo])
+todoredo_network ::  forall t m. (t ~ SpiderTimeline Global, m ~ SpiderHost Global)
+  => (Event t AppCmd -> PerformEventT t m (Event t [Todo]))
 todoredo_network ev = do
   let
     trc = TodoUndoConfig {
@@ -71,7 +71,7 @@ basic_test = TestLabel "basic" $ TestCase $ do
       New "8" -- [f2,f4,f7,f8] (nothing to redo)
       ]
     run :: IO [[Maybe [Todo]]]
-    run = basicHostWithStaticEvents bs todoredo_network
+    run = runAppSimple todoredo_network bs
   v <- liftIO run
   mapM_ print (v)
   return ()

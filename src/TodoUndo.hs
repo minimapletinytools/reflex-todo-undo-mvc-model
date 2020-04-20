@@ -71,9 +71,13 @@ data TodoUndoConfig t = TodoUndoConfig {
   , _trconfig_clearCompleted :: Event t ()
   , _trconfig_undo           :: Event t ()
   , _trconfig_redo           :: Event t ()
+  -- TODO change this to toggle, just one event
   , _trconfig_tick           :: Event t Int
   , _trconfig_untick         :: Event t Int
   , _trconfig_remove         :: Event t Int
+
+  -- TODO
+  --, _trconfig_modify :: Event t (Int, Text)
 }
 
 data TodoUndo t = TodoUndo {
@@ -96,7 +100,7 @@ data TRCmd t = TRCNew (DynTodo t) | TRCDelete (Int, DynTodo t) | TRCClearComplet
 type UID = Int
 
 holdTodo ::
-  forall t m a. (Reflex t, MonadHold t m, MonadFix m, Adjustable t m, PostBuild t m)
+  forall t m a. (Reflex t, MonadHold t m, MonadFix m, Adjustable t m)
   => TodoUndoConfig t
   -> m (TodoUndo t)
 holdTodo TodoUndoConfig {..} = mdo

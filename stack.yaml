@@ -53,9 +53,7 @@ extra-deps:
 - smash-0.1.1.0
 # TODO switch this to split out libraries when that happens
 - github: pdlla/potato_flow
-  commit: cbb57b52c4fe31527bd590c7a38ee8b093123607
-- github: pdlla/reflex-basic-host
-  commit: 9500e9322d7b179f9aa4b08ae2e8bb3b7faf0c6a
+  commit: 0163aaa40966c29ae272b42b378794dc287a0176`
 
 
 # Override default flag values for local packages and extra-deps
