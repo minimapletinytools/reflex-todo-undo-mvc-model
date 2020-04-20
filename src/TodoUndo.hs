@@ -206,7 +206,7 @@ holdTodo TodoUndoConfig {..} = mdo
 
     makeDynTodo :: Text -> PushM t (DynTodo t)
     makeDynTodo s = do
-      uid <- sample . current $ uidDyn
+      !uid <- sample . current $ uidDyn
       let
         -- only toggle if uid of ticked element matches our own
         cffn uid' = if uid' == uid then Just () else Nothing
