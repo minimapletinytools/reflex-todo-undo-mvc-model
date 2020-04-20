@@ -18,6 +18,7 @@ main :: IO ()
 main = memtest
 
 
+-- TODO rename tick to toggle and get rid of untick
 data AppCmd = New Text | Clear | Undo | Redo | Tick Int | Untick Int | Remove Int deriving (Show)
 
 todoundo_network ::  forall t m. (t ~ SpiderTimeline Global, m ~ SpiderHost Global)

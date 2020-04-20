@@ -71,7 +71,7 @@ data TodoUndoConfig t = TodoUndoConfig {
   , _trconfig_clearCompleted :: Event t ()
   , _trconfig_undo           :: Event t ()
   , _trconfig_redo           :: Event t ()
-  -- TODO change this to toggle, just one event
+  -- TODO rename tick to toggle and get rid of untick
   , _trconfig_tick           :: Event t Int
   , _trconfig_untick         :: Event t Int
   , _trconfig_remove         :: Event t Int
@@ -84,6 +84,8 @@ data TodoUndo t = TodoUndo {
   _tr_todos :: Dynamic t [Todo]
 }
 
+
+-- TODO actually use these or delete
 data TodoUndoConnector t = TodoUndoConnector {
   _trconnector_todo_connector_tick :: Dynamic t [Todo] -> (Event t Int, Event t Int)
 }
@@ -208,6 +210,8 @@ holdTodo TodoUndoConfig {..} = mdo
       let
         -- only toggle if uid of ticked element matches our own
         cffn uid' = if uid' == uid then Just () else Nothing
+
+      -- TODO switch to fan
       doneState <- toggle False
         (fmapMaybe cffn . leftmost . fmap (push tickDoUndoPushSelect) $ [doAction, undoAction])
 
@@ -260,7 +264,6 @@ holdTodo TodoUndoConfig {..} = mdo
         , _dynamicSeqConfig_clear  = never
       }
 
-  -- note that internal representation is in reverse order
   todosDyn :: DynamicSeq t (DynTodo t)
     <- holdDynamicSeq Seq.empty dsc
 
