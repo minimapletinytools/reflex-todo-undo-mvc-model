@@ -232,11 +232,13 @@ holdTodo TodoUndoConfig {..} = mdo
 
   -- create clear completed stack
   -- ----------------------
+  -- clearing will also likely cause _actionStack_clear to trigger so we delay it by 1 frame
+  delayedClear <- sequenceEvents clear_do_ev (_actionStack_clear as)
   let
     clearedStackConfig = DynamicStackConfig {
         _dynamicStackConfig_push = clear_do_ev
       , _dynamicStackConfig_pop = clear_undo_ev
-      , _dynamicStackConfig_clear = _actionStack_clear as
+      , _dynamicStackConfig_clear = delayedClear
     }
   clearedStack :: DynamicStack t [(Int, DynTodo t)]
     <- holdDynamicStack [] clearedStackConfig
