@@ -60,8 +60,9 @@ instance Show Todo where
 -- note that it's possible to do a simpler first-order implementation where states are tracked in a separate dynamic
 -- but for the purpose of this example, we want to do it using higher order frp
 data DynTodo t = DynTodo {
-  dtDesc     :: Text
-  , dtId     :: Int
+  dtId     :: Int
+  -- TODO make this dynamic
+  , dtDesc     :: Text
   , dtIsDone :: Dynamic t Bool
 }
 
@@ -74,6 +75,7 @@ data TodoUndoConfig t = TodoUndoConfig {
   -- TODO rename tick to toggle and get rid of untick
   , _trconfig_tick           :: Event t Int
   , _trconfig_untick         :: Event t Int
+
   , _trconfig_remove         :: Event t Int
 
   -- TODO
@@ -97,7 +99,7 @@ todoUndoConnect (TodoUndoConnector cx) (TodoUndo todos) trc = trc {
   }
 
 data TRAppCmd = TRAUndo | TRARedo
-data TRCmd t = TRCNew (DynTodo t) | TRCDelete (Int, DynTodo t) | TRCClearCompleted | TRCTick Int | TRCUntick Int
+data TRCmd t = TRCNew (DynTodo t) | TRCDelete (Int, DynTodo t) | TRCClearCompleted | TRCTick Int | TRCUntick Int | TRCModify (Int, Text)
 
 type UID = Int
 
@@ -114,6 +116,7 @@ holdTodo TodoUndoConfig {..} = mdo
       , fmap TRCTick _trconfig_tick
       , fmap TRCUntick _trconfig_untick
       , fmap TRCDelete $ pushAlways findDynTodo _trconfig_remove
+      --, fmap TRCModify _trconfig_modify
       ]
 
     asc = ActionStackConfig {
