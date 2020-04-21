@@ -42,9 +42,6 @@ todoundo_network AppIn {..} = do
         , _trconfig_tick            = flip fmapMaybe ev $ \case
           Tick n -> Just n
           _ -> Nothing
-        , _trconfig_untick          = flip fmapMaybe ev $ \case
-          Untick n -> Just n
-          _ -> Nothing
         , _trconfig_remove          = flip fmapMaybe ev $ \case
           Remove n -> Just n
           _ -> Nothing

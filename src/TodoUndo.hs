@@ -74,7 +74,6 @@ data TodoUndoConfig t = TodoUndoConfig {
   , _trconfig_redo           :: Event t ()
   -- TODO rename tick to toggle and get rid of untick
   , _trconfig_tick           :: Event t Int
-  , _trconfig_untick         :: Event t Int
 
   , _trconfig_remove         :: Event t Int
 
@@ -95,11 +94,10 @@ data TodoUndoConnector t = TodoUndoConnector {
 todoUndoConnect :: TodoUndoConnector t -> TodoUndo t -> TodoUndoConfig t -> TodoUndoConfig t
 todoUndoConnect (TodoUndoConnector cx) (TodoUndo todos) trc = trc {
     _trconfig_tick = fst . cx $ todos
-    , _trconfig_untick = snd . cx $ todos
   }
 
 data TRAppCmd = TRAUndo | TRARedo
-data TRCmd t = TRCNew (DynTodo t) | TRCDelete (Int, DynTodo t) | TRCClearCompleted | TRCTick Int | TRCUntick Int | TRCModify (Int, Text)
+data TRCmd t = TRCNew (DynTodo t) | TRCDelete (Int, DynTodo t) | TRCClearCompleted | TRCTick Int | TRCModify (Int, Text)
 
 type UID = Int
 
@@ -114,7 +112,6 @@ holdTodo TodoUndoConfig {..} = mdo
       fmap TRCNew $ pushAlways makeDynTodo _trconfig_new
       , fmap (const TRCClearCompleted) _trconfig_clearCompleted
       , fmap TRCTick _trconfig_tick
-      , fmap TRCUntick _trconfig_untick
       , fmap TRCDelete $ pushAlways findDynTodo _trconfig_remove
       --, fmap TRCModify _trconfig_modify
       ]
@@ -204,7 +201,6 @@ holdTodo TodoUndoConfig {..} = mdo
       in
         \case
           TRCTick index -> toggleFn index
-          TRCUntick index -> toggleFn index
           _ -> return Nothing where
 
     makeDynTodo :: Text -> PushM t (DynTodo t)

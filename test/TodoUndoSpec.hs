@@ -15,7 +15,7 @@ import           Reflex.Test.Host
 import           TodoUndo
 
 
-data AppCmd = New Text | Clear | Undo | Redo | Tick Int | Untick Int | Remove Int deriving (Show)
+data AppCmd = New Text | Clear | Undo | Redo | Tick Int | Remove Int deriving (Show)
 
 todoundo_network ::  forall t m. (t ~ SpiderTimeline Global, m ~ SpiderHost Global)
   => (Event t AppCmd -> PerformEventT t m (Event t [Todo]))
@@ -36,9 +36,6 @@ todoundo_network ev = do
           _ -> Nothing
         , _trconfig_tick            = flip fmapMaybe ev $ \case
           Tick n -> Just n
-          _ -> Nothing
-        , _trconfig_untick          = flip fmapMaybe ev $ \case
-          Untick n -> Just n
           _ -> Nothing
         , _trconfig_remove          = flip fmapMaybe ev $ \case
           Remove n -> Just n
