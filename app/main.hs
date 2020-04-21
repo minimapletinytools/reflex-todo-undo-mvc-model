@@ -90,9 +90,11 @@ memtest = runSpiderHost $ do
   let
     loop n = do
       --out <- tickAppFrame appFrame (Just (That 1))
-      out <- tickAppFrame appFrame $ case n `mod` 2 of
+      out <- tickAppFrame appFrame $ case n `mod` 4 of
         0 -> Just (That (New "poo"))
-        1 -> Just (That (Undo))
+        1 -> Just (That (Clear))
+        2 -> Just (That (Undo))
+        3 -> Just (That (Undo))
       liftIO $ do
         putStrLn $ "ticked: " <> show out
         threadDelay 10000

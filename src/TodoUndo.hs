@@ -236,6 +236,8 @@ holdTodo TodoUndoConfig {..} = mdo
 
   -- create clear completed stack
   -- ----------------------
+
+  -- TODO this delay thing causes leaks
   -- clearing will also likely cause _actionStack_clear to trigger so we delay it by 1 frame
   delayedClear <- sequenceEvents clear_do_ev (_actionStack_clear as)
   let
