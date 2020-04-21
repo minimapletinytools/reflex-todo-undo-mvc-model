@@ -211,6 +211,7 @@ holdTodo TodoUndoConfig {..} = mdo
         -- only toggle if uid of ticked element matches our own
         cffn uid' = if uid' == uid then Just () else Nothing
 
+      -- TODO this leaks
       -- TODO switch to fan
       doneState <- toggle False
         (fmapMaybe cffn . leftmost . fmap (push tickDoUndoPushSelect) $ [doAction, undoAction])
@@ -276,6 +277,8 @@ holdTodo TodoUndoConfig {..} = mdo
     contents = toList <$> _dynamicSeq_contents todosDyn
     descriptions :: Dynamic t [Text]
     descriptions = dtDesc <<$>> contents
+
+    -- TODO this leaks
     doneStates :: Dynamic t [Bool]
     doneStates = join . fmap sequence $ dtIsDone <<$>> contents
 
