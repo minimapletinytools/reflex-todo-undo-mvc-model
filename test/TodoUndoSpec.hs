@@ -63,11 +63,14 @@ basic_test = TestLabel "basic" $ TestCase $ do
       New "6", -- [f2,f4,f6]
       Undo,
       New "7", -- [f2,f4,f7]
-      Redo,
+      Redo, Redo, Redo,
       New "8", -- [f2,f4,f7,f8] (nothing to redo)
       Modify (1, "4meow meow meow"),
       Undo,Redo,
-      Tick 1
+      Tick 1, -- [f2,t4meow meow meow,f7,f8]
+      Clear,
+      Undo,
+      Clear -- [f2,f7,f8]
       ]
     run :: IO [[Maybe [Todo]]]
     run = runAppSimple todoundo_network bs

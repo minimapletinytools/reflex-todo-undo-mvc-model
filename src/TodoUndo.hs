@@ -259,18 +259,21 @@ holdTodo TodoUndoConfig {..} = mdo
   -- create clear completed stack
   -- ----------------------
 
-  -- clearing will also likely cause _actionStack_clear to trigger so we delay it by 1 frame
-  delayedClear <- sequenceEvents clear_do_ev (_actionStack_clear as)
+  -- clearing will also cause _actionStack_clear to trigger so we delay it by 1 frame
+  -- so we want to clear the stack first, and then push the stuff we just removed
+  delayed_clear_do_ev <- sequenceEvents (_actionStack_clear as) clear_do_ev
   let
     clearedStackConfig = DynamicStackConfig {
-        _dynamicStackConfig_push = clear_do_ev
-      , _dynamicStackConfig_pop = clear_undo_ev
-      , _dynamicStackConfig_clear = delayedClear
+        _dynamicStackConfig_push = traceEventWith (const "clear1") delayed_clear_do_ev
+      , _dynamicStackConfig_pop = traceEventWith (const "meow1") clear_undo_ev
+      -- clearing the action stack means we can never "undo" past this point
+      -- so clear the cleared stack as well as we don't need the info anymore
+      , _dynamicStackConfig_clear = _actionStack_clear as
     }
   clearedStack :: DynamicStack t [(Int, DynTodo t)]
     <- holdDynamicStack [] clearedStackConfig
-  remove_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForRemoval $ _dynamicStack_pushed clearedStack
-  add_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForAddition $ _dynamicStack_popped clearedStack
+  remove_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForRemoval $ traceEventWith (const "clear2") $ _dynamicStack_pushed clearedStack
+  add_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForAddition $ traceEventWith (const "meow2") $ _dynamicStack_popped clearedStack
   let
     remove_many_ev :: Event t (Int, Int)
     remove_many_ev = fmap (\(i,_) -> (i,1)) remove_many_ev'
@@ -282,7 +285,7 @@ holdTodo TodoUndoConfig {..} = mdo
   -- ----------------------
   let
     dsc = DynamicSeqConfig {
-        _dynamicSeqConfig_insert   = leftmost [insert_do_ev, insert_undo_ev, add_many_ev]
+        _dynamicSeqConfig_insert   = leftmost [insert_do_ev, insert_undo_ev, traceEventWith (const "meow") add_many_ev]
         , _dynamicSeqConfig_remove = leftmost [remove_do_ev, remove_undo_ev, remove_many_ev]
         , _dynamicSeqConfig_clear  = never
       }
