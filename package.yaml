@@ -73,7 +73,9 @@ dependencies:
 - base >= 4.7 && < 5
 - relude
 - reflex
-- potato-flow
+- reflex-test-host
+- reflex-dynamic-containers
+- reflex-potatoes
 - containers
 - text
 

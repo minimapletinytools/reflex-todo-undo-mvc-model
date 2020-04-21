@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 46b290ab76ffac58edd8ec952b1e89f9841f1fdbbbb9ae67822d1038f6fb09c7
+-- hash: 2bd5619d304c2b8f993bb4b480e15c72879cd243f75c7414e15a3bbc308722e9
 
 name:           todo-undo-mvc-model
 version:        0.1.0.0
@@ -37,8 +37,10 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
-    , potato-flow
     , reflex
+    , reflex-dynamic-containers
+    , reflex-potatoes
+    , reflex-test-host
     , relude
     , text
   default-language: Haskell2010
@@ -54,8 +56,10 @@ executable memorytests
   build-depends:
       base >=4.7 && <5
     , containers
-    , potato-flow
     , reflex
+    , reflex-dynamic-containers
+    , reflex-potatoes
+    , reflex-test-host
     , relude
     , text
     , these
@@ -78,8 +82,10 @@ test-suite todo-undo-mvc-model-test
     , containers
     , hspec
     , hspec-contrib
-    , potato-flow
     , reflex
+    , reflex-dynamic-containers
+    , reflex-potatoes
+    , reflex-test-host
     , relude
     , text
     , todo-undo-mvc-model

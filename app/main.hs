@@ -5,7 +5,7 @@ import           Relude
 import           GHC.Stats
 
 import           Reflex
-import           Reflex.Test.App
+import           Reflex.Test.Host
 
 import qualified Data.List          as L
 import           Data.These

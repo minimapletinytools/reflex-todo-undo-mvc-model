@@ -10,7 +10,7 @@ import           Test.Hspec.Contrib.HUnit (fromHUnitTest)
 import           Test.HUnit
 
 import           Reflex
-import           Reflex.Test.App
+import           Reflex.Test.Host
 
 import           TodoUndo
 
