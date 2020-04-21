@@ -11,7 +11,6 @@ module TodoUndo (
 ) where
 
 import           Relude
-import           Relude.Extra.Map
 
 import           Reflex
 import           Reflex.Data.ActionStack
@@ -22,14 +21,11 @@ import           Reflex.Potato.Helpers
 import           Control.Monad.Fix
 import Control.Exception (assert)
 
-import qualified Data.List               as L
 import qualified Data.Sequence as Seq
 import Data.Foldable (foldrM)
 import qualified Text.Show
 import qualified Data.Text
-import           Data.Dependent.Sum              (DSum ((:=>)), (==>))
-import qualified Data.Dependent.Sum              as DS
-import qualified Data.Dependent.Map as DM
+import           Data.Dependent.Sum              ((==>))
 import           Data.Functor.Misc
 import Data.These
 
@@ -86,6 +82,7 @@ data TodoUndo t = TodoUndo {
 }
 
 
+
 -- TODO actually use these or delete
 data TodoUndoConnector t = TodoUndoConnector {
   _trconnector_todo_connector_tick :: Dynamic t [Todo] -> (Event t Int, Event t Int)
@@ -98,10 +95,8 @@ todoUndoConnect (TodoUndoConnector cx) (TodoUndo todos) trc = trc {
 
 type UID = Int
 
-type IdItemCmd = DS.DSum (Const2 UID ItemCmd) Identity
 data ItemCmd = ICTick | ICModify (Text, Text)
 
-data TRAppCmd = TRAUndo | TRARedo
 data TRCmd t =
   TRCNew (DynTodo t)
   | TRCClearCompleted
@@ -110,7 +105,7 @@ data TRCmd t =
   | TRCModify (Int, Text, Text)
 
 holdTodo ::
-  forall t m a. (Reflex t, MonadHold t m, MonadFix m, Adjustable t m)
+  forall t m. (Reflex t, MonadHold t m, MonadFix m, Adjustable t m)
   => TodoUndoConfig t
   -> m (TodoUndo t)
 holdTodo TodoUndoConfig {..} = mdo
@@ -210,9 +205,9 @@ holdTodo TodoUndoConfig {..} = mdo
     -- we just toggle on do/undo so we don't need to distinguish between do and undo
     itemPushSelect :: TRCmd t -> PushM t (Maybe (UID, ItemCmd))
     itemPushSelect = let
-        toggleFn index modify = do
+        toggleFn index cmd = do
           tds <- sample . current $ _dynamicSeq_contents todosDyn
-          return . Just $ (dtId $ Seq.index tds index, maybe ICTick id modify)
+          return . Just $ (dtId $ Seq.index tds index, maybe ICTick id cmd)
       in
         \case
           TRCTick index -> toggleFn index Nothing
@@ -234,12 +229,13 @@ holdTodo TodoUndoConfig {..} = mdo
         textfoldfn _ _ = error "do and undo at the same time"
       !uid <- sample . current $ uidDyn
       let
-        itemDoCmd = fmap dsum_to_dmap $ fmap (\(uid, cmd) -> Const2 uid ==> cmd) $ push itemPushSelect doAction
-        itemUndoCmd = fmap dsum_to_dmap $ fmap (\(uid, cmd) -> Const2 uid ==> cmd) $ push itemPushSelect undoAction
+        itemDoCmd = fmap dsum_to_dmap $ fmap (\(uid', cmd) -> Const2 uid' ==> cmd) $ push itemPushSelect doAction
+        itemUndoCmd = fmap dsum_to_dmap $ fmap (\(uid', cmd) -> Const2 uid' ==> cmd) $ push itemPushSelect undoAction
         selectedItemDoCmd :: Event t (ItemCmd) = select (fan itemDoCmd) (Const2 uid)
         selectedItemUndoCmd :: Event t (ItemCmd) = select (fan itemUndoCmd) (Const2 uid)
       doneState <- toggle False $ leftmost $ fmap (fmapMaybe tickSelect) [selectedItemDoCmd, selectedItemUndoCmd]
       textState <- foldDyn textfoldfn s (alignEventWithMaybe Just (fmapMaybe modifySelect selectedItemDoCmd) (fmapMaybe modifySelect selectedItemUndoCmd))
+
 
       return DynTodo {
           dtId = uid
