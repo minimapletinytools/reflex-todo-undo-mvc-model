@@ -27,6 +27,11 @@ import qualified Data.Sequence as Seq
 import Data.Foldable (foldrM)
 import qualified Text.Show
 import qualified Data.Text
+import           Data.Dependent.Sum              (DSum ((:=>)), (==>))
+import qualified Data.Dependent.Sum              as DS
+import qualified Data.Dependent.Map as DM
+import           Data.Functor.Misc
+import Data.These
 
 -- helper methods
 foldrWithIndexM :: forall a b m. (Monad m) =>  (Int -> a -> b -> m b) -> b -> Seq a -> m b
@@ -61,8 +66,7 @@ instance Show Todo where
 -- but for the purpose of this example, we want to do it using higher order frp
 data DynTodo t = DynTodo {
   dtId     :: Int
-  -- TODO make this dynamic
-  , dtDesc     :: Text
+  , dtDesc     :: Dynamic t Text
   , dtIsDone :: Dynamic t Bool
 }
 
@@ -74,9 +78,7 @@ data TodoUndoConfig t = TodoUndoConfig {
   , _trconfig_redo           :: Event t ()
   , _trconfig_tick           :: Event t Int -- ^ ticking toggles a todo item as done or not done
   , _trconfig_remove         :: Event t Int
-
-  -- TODO
-  --, _trconfig_modify :: Event t (Int, Text)
+  , _trconfig_modify :: Event t (Int, Text)
 }
 
 data TodoUndo t = TodoUndo {
@@ -94,10 +96,18 @@ todoUndoConnect (TodoUndoConnector cx) (TodoUndo todos) trc = trc {
     _trconfig_tick = fst . cx $ todos
   }
 
-data TRAppCmd = TRAUndo | TRARedo
-data TRCmd t = TRCNew (DynTodo t) | TRCDelete (Int, DynTodo t) | TRCClearCompleted | TRCTick Int | TRCModify (Int, Text, Text)
-
 type UID = Int
+
+type IdItemCmd = DS.DSum (Const2 UID ItemCmd) Identity
+data ItemCmd = ICTick | ICModify (Text, Text)
+
+data TRAppCmd = TRAUndo | TRARedo
+data TRCmd t =
+  TRCNew (DynTodo t)
+  | TRCClearCompleted
+  | TRCDelete (Int, DynTodo t)
+  | TRCTick Int
+  | TRCModify (Int, Text, Text)
 
 holdTodo ::
   forall t m a. (Reflex t, MonadHold t m, MonadFix m, Adjustable t m)
@@ -105,9 +115,12 @@ holdTodo ::
   -> m (TodoUndo t)
 holdTodo TodoUndoConfig {..} = mdo
 
-  -- TODO for modify event, attach current text of the todo
-
   let
+    pushPrevDesc (i, after) = do
+      todos <- sample . current $ _dynamicSeq_contents todosDyn
+      -- index must be valid, will crash if it's invalid
+      before <- sample . current . dtDesc $ Seq.index todos i
+      return $ TRCModify (i, before, after)
 
     docmds = leftmostwarn "WARNING: received multiple commands at once" [
       -- construct element to put on
@@ -115,6 +128,7 @@ holdTodo TodoUndoConfig {..} = mdo
       , fmap (const TRCClearCompleted) _trconfig_clearCompleted
       , fmap TRCTick _trconfig_tick
       , fmap TRCDelete $ pushAlways findDynTodo _trconfig_remove
+      , pushAlways pushPrevDesc _trconfig_modify
       ]
 
     asc = ActionStackConfig {
@@ -194,30 +208,42 @@ holdTodo TodoUndoConfig {..} = mdo
     -- --------------------------
     -- maps tick/untick list index to Todo identifier
     -- we just toggle on do/undo so we don't need to distinguish between do and undo
-    tickDoUndoPushSelect :: TRCmd t -> PushM t (Maybe UID)
-    tickDoUndoPushSelect = let
-        toggleFn index = do
+    itemPushSelect :: TRCmd t -> PushM t (Maybe (UID, ItemCmd))
+    itemPushSelect = let
+        toggleFn index modify = do
           tds <- sample . current $ _dynamicSeq_contents todosDyn
-          return . Just . dtId $ Seq.index tds index
+          return . Just $ (dtId $ Seq.index tds index, maybe ICTick id modify)
       in
         \case
-          TRCTick index -> toggleFn index
+          TRCTick index -> toggleFn index Nothing
+          TRCModify (index, before, after) -> toggleFn index (Just $ ICModify (before,after))
           _ -> return Nothing where
+
 
     makeDynTodo :: Text -> PushM t (DynTodo t)
     makeDynTodo s = do
+      let
+        modifySelect = \case
+          ICModify x -> Just x
+          _ -> Nothing
+        tickSelect = \case
+          ICTick -> Just ()
+          _ -> Nothing
+        textfoldfn (This (_, after)) _ = after
+        textfoldfn (That (before,_)) _ = before
+        textfoldfn _ _ = error "do and undo at the same time"
       !uid <- sample . current $ uidDyn
       let
-        -- only toggle if uid of ticked element matches our own
-        cffn uid' = if uid' == uid then Just () else Nothing
-
-      -- TODO switch to fan
-      doneState <- toggle False
-        (fmapMaybe cffn . leftmost . fmap (push tickDoUndoPushSelect) $ [doAction, undoAction])
+        itemDoCmd = fmap dsum_to_dmap $ fmap (\(uid, cmd) -> Const2 uid ==> cmd) $ push itemPushSelect doAction
+        itemUndoCmd = fmap dsum_to_dmap $ fmap (\(uid, cmd) -> Const2 uid ==> cmd) $ push itemPushSelect undoAction
+        selectedItemDoCmd :: Event t (ItemCmd) = select (fan itemDoCmd) (Const2 uid)
+        selectedItemUndoCmd :: Event t (ItemCmd) = select (fan itemUndoCmd) (Const2 uid)
+      doneState <- toggle False $ leftmost $ fmap (fmapMaybe tickSelect) [selectedItemDoCmd, selectedItemUndoCmd]
+      textState <- foldDyn textfoldfn s (alignEventWithMaybe Just (fmapMaybe modifySelect selectedItemDoCmd) (fmapMaybe modifySelect selectedItemUndoCmd))
 
       return DynTodo {
-          dtDesc = s
-          , dtId = uid
+          dtId = uid
+          , dtDesc = textState
           , dtIsDone = doneState
         }
 
@@ -274,7 +300,7 @@ holdTodo TodoUndoConfig {..} = mdo
     contents :: Dynamic t [DynTodo t]
     contents = toList <$> _dynamicSeq_contents todosDyn
     descriptions :: Dynamic t [Text]
-    descriptions = dtDesc <<$>> contents
+    descriptions = join . fmap sequence $ dtDesc  <<$>> contents
 
     doneStates :: Dynamic t [Bool]
     doneStates = join . fmap sequence $ dtIsDone <<$>> contents

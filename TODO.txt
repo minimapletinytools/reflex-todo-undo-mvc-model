@@ -1,8 +1,8 @@
 
 ::TODO::
--add modify support
+DNE-add modify support
   -need to stash current value of todo so you can undo it
--switch to `fan` when listening for events inside of dyntodo
+DONE-switch to `fan` when listening for events inside of dyntodo
 DONE-fix sorta leaks (see notes)
   -turns out there was no leaks, GHC RTS just hangs onto to memory for a while
 

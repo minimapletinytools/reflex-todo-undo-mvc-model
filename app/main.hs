@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
+
 import           Relude
 
 import           GHC.Stats
@@ -18,8 +19,7 @@ main :: IO ()
 main = memtest
 
 
--- TODO rename tick to toggle and get rid of untick
-data AppCmd = New Text | Clear | Undo | Redo | Tick Int | Untick Int | Remove Int deriving (Show)
+data AppCmd = New Text | Clear | Undo | Redo | Tick Int | Remove Int | Modify (Int, Text) deriving (Show)
 
 todoundo_network ::  forall t m. (t ~ SpiderTimeline Global, m ~ SpiderHost Global)
   => (AppIn t () AppCmd -> PerformEventT t m (AppOut t () [Todo]))
@@ -44,6 +44,9 @@ todoundo_network AppIn {..} = do
           _ -> Nothing
         , _trconfig_remove          = flip fmapMaybe ev $ \case
           Remove n -> Just n
+          _ -> Nothing
+        , _trconfig_modify = flip fmapMaybe ev $ \case
+          Modify s -> Just s
           _ -> Nothing
       }
   todos <- holdTodo trc
@@ -88,7 +91,7 @@ memtest = runSpiderHost $ do
     loop n = do
       --out <- tickAppFrame appFrame (Just (That 1))
       out <- tickAppFrame appFrame $ case n `mod` 4 of
-        0 -> Just (That (New "poo"))
+        0 -> Just (That (New "todo"))
         1 -> Just (That (Clear))
         2 -> Just (That (Undo))
         3 -> Just (That (Undo))

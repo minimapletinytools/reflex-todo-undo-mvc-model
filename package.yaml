@@ -78,6 +78,9 @@ dependencies:
 - reflex-potatoes
 - containers
 - text
+- dependent-sum
+- these
+- dependent-map
 
 
 library:
