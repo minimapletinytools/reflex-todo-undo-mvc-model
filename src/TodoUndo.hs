@@ -115,7 +115,10 @@ holdTodo TodoUndoConfig {..} = mdo
       todos <- sample . current $ _dynamicSeq_contents todosDyn
       -- index must be valid, will crash if it's invalid
       before <- sample . current . dtDesc $ Seq.index todos i
-      return $ TRCModify (i, before, after)
+      if before == after  then
+        return Nothing
+      else
+        return $ Just $ TRCModify (i, before, after)
 
     docmds = leftmostwarn "WARNING: received multiple commands at once" [
       -- construct element to put on
@@ -123,7 +126,7 @@ holdTodo TodoUndoConfig {..} = mdo
       , fmap (const TRCClearCompleted) _trconfig_clearCompleted
       , fmap TRCTick _trconfig_tick
       , fmap TRCDelete $ pushAlways findDynTodo _trconfig_remove
-      , pushAlways pushPrevDesc _trconfig_modify
+      , push pushPrevDesc _trconfig_modify
       ]
 
     asc = ActionStackConfig {
