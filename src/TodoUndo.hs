@@ -106,7 +106,7 @@ holdTodo ::
 holdTodo TodoUndoConfig {..} = mdo
 
   -- TODO for modify event, attach current text of the todo
-  
+
   let
 
     docmds = leftmostwarn "WARNING: received multiple commands at once" [
@@ -211,7 +211,6 @@ holdTodo TodoUndoConfig {..} = mdo
         -- only toggle if uid of ticked element matches our own
         cffn uid' = if uid' == uid then Just () else Nothing
 
-      -- TODO this leaks
       -- TODO switch to fan
       doneState <- toggle False
         (fmapMaybe cffn . leftmost . fmap (push tickDoUndoPushSelect) $ [doAction, undoAction])
@@ -238,7 +237,6 @@ holdTodo TodoUndoConfig {..} = mdo
   -- create clear completed stack
   -- ----------------------
 
-  -- TODO this delay thing causes leaks
   -- clearing will also likely cause _actionStack_clear to trigger so we delay it by 1 frame
   delayedClear <- sequenceEvents clear_do_ev (_actionStack_clear as)
   let
@@ -278,7 +276,6 @@ holdTodo TodoUndoConfig {..} = mdo
     descriptions :: Dynamic t [Text]
     descriptions = dtDesc <<$>> contents
 
-    -- TODO this leaks
     doneStates :: Dynamic t [Bool]
     doneStates = join . fmap sequence $ dtIsDone <<$>> contents
 

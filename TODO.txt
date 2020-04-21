@@ -3,7 +3,8 @@
 -add modify support
   -need to stash current value of todo so you can undo it
 -switch to `fan` when listening for events inside of dyntodo
--fix sorta leaks (see notes)
+DONE-fix sorta leaks (see notes)
+  -turns out there was no leaks, GHC RTS just hangs onto to memory for a while
 
 ::NOTES::
 
