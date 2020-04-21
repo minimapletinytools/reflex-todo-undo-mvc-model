@@ -72,9 +72,7 @@ data TodoUndoConfig t = TodoUndoConfig {
   , _trconfig_clearCompleted :: Event t ()
   , _trconfig_undo           :: Event t ()
   , _trconfig_redo           :: Event t ()
-  -- TODO rename tick to toggle and get rid of untick
-  , _trconfig_tick           :: Event t Int
-
+  , _trconfig_tick           :: Event t Int -- ^ ticking toggles a todo item as done or not done
   , _trconfig_remove         :: Event t Int
 
   -- TODO
@@ -97,7 +95,7 @@ todoUndoConnect (TodoUndoConnector cx) (TodoUndo todos) trc = trc {
   }
 
 data TRAppCmd = TRAUndo | TRARedo
-data TRCmd t = TRCNew (DynTodo t) | TRCDelete (Int, DynTodo t) | TRCClearCompleted | TRCTick Int | TRCModify (Int, Text)
+data TRCmd t = TRCNew (DynTodo t) | TRCDelete (Int, DynTodo t) | TRCClearCompleted | TRCTick Int | TRCModify (Int, Text, Text)
 
 type UID = Int
 
@@ -106,14 +104,17 @@ holdTodo ::
   => TodoUndoConfig t
   -> m (TodoUndo t)
 holdTodo TodoUndoConfig {..} = mdo
+
+  -- TODO for modify event, attach current text of the todo
+  
   let
+
     docmds = leftmostwarn "WARNING: received multiple commands at once" [
       -- construct element to put on
       fmap TRCNew $ pushAlways makeDynTodo _trconfig_new
       , fmap (const TRCClearCompleted) _trconfig_clearCompleted
       , fmap TRCTick _trconfig_tick
       , fmap TRCDelete $ pushAlways findDynTodo _trconfig_remove
-      --, fmap TRCModify _trconfig_modify
       ]
 
     asc = ActionStackConfig {

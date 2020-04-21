@@ -1,3 +1,12 @@
+
+::TODO::
+-add modify support
+  -need to stash current value of todo so you can undo it
+-switch to `fan` when listening for events inside of dyntodo
+-fix sorta leaks (see notes)
+
+::NOTES::
+
 after a
 >stack build --profile
 running:
