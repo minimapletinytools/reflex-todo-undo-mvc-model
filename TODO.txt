@@ -1,0 +1,7 @@
+after a
+>stack build --profile
+running:
+>stack exec --profile -- memorytests +RTS -hd
+does not leak, but running
+>stack exec --profile -- memorytests
+does leak :joy:
