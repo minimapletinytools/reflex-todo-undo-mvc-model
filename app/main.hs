@@ -8,7 +8,6 @@ import           GHC.Stats
 import           Reflex
 import           Reflex.Test.Host
 
-import qualified Data.List          as L
 import           Data.These
 
 import           Control.Concurrent
@@ -56,7 +55,7 @@ todoundo_network AppIn {..} = do
       , _appOut_event = updated (_tr_todos todos)
     }
 
-
+{-
 basic_network :: forall t m.
   (t ~ SpiderTimeline Global, m ~ SpiderHost Global)
   => (AppIn t Int Int -> PerformEventT t m (AppOut t Int Int))
@@ -64,7 +63,7 @@ basic_network AppIn {..} = return
   AppOut {
     _appOut_behavior = fmap (*(-1)) _appIn_behavior
     , _appOut_event = fmap (\(b,e) -> e+b) $ attach _appIn_behavior _appIn_event
-  }
+  }-}
 
 toImportant :: RTSStats -> ImportantStats
 toImportant RTSStats {..} = ImportantStats {
@@ -95,6 +94,7 @@ memtest = runSpiderHost $ do
         1 -> Just (That (Clear))
         2 -> Just (That (Undo))
         3 -> Just (That (Undo))
+        _ -> error "never happnens"
       liftIO $ do
         putStrLn $ "ticked: " <> show out
         threadDelay 10000
