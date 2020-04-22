@@ -269,8 +269,8 @@ holdTodo TodoUndoConfig {..} = mdo
     }
   clearedStack :: DynamicStack t [(Int, DynTodo t)]
     <- holdDynamicStack [] clearedStackConfig
-  remove_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ traceEvent "removing" $ fmap reindexForRemoval $ _dynamicStack_pushed clearedStack
-  add_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ traceEvent "adding" $ fmap reindexForAddition $ _dynamicStack_popped clearedStack
+  remove_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForRemoval $ _dynamicStack_pushed clearedStack
+  add_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForAddition $ _dynamicStack_popped clearedStack
   let
     remove_many_ev :: Event t (Int, Int)
     remove_many_ev = fmap (\(i,_) -> (i,1)) remove_many_ev'
