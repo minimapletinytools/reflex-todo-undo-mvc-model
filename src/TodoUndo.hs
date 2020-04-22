@@ -65,6 +65,8 @@ data DynTodo t = DynTodo {
   , dtDesc     :: Dynamic t Text
   , dtIsDone :: Dynamic t Bool
 }
+instance Show (DynTodo t) where
+  show = show . dtId
 
 data TodoUndoConfig t = TodoUndoConfig {
   -- input
@@ -80,8 +82,6 @@ data TodoUndoConfig t = TodoUndoConfig {
 data TodoUndo t = TodoUndo {
   _tr_todos :: Dynamic t [Todo]
 }
-
-
 
 -- TODO actually use these or delete
 data TodoUndoConnector t = TodoUndoConnector {
@@ -261,22 +261,16 @@ holdTodo TodoUndoConfig {..} = mdo
 
   -- create clear completed stack
   -- ----------------------
-
-  -- clearing will also cause _actionStack_clear to trigger so we delay it by 1 frame
-  -- so we want to clear the stack first, and then push the stuff we just removed
-  delayed_clear_do_ev <- sequenceEvents (_actionStack_clear as) clear_do_ev
   let
     clearedStackConfig = DynamicStackConfig {
-        _dynamicStackConfig_push = delayed_clear_do_ev
+        _dynamicStackConfig_push = clear_do_ev
       , _dynamicStackConfig_pop = clear_undo_ev
-      -- clearing the action stack means we can never "undo" past this point
-      -- so clear the cleared stack as well as we don't need the info anymore
-      , _dynamicStackConfig_clear = _actionStack_clear as
+      , _dynamicStackConfig_clear = never
     }
   clearedStack :: DynamicStack t [(Int, DynTodo t)]
     <- holdDynamicStack [] clearedStackConfig
-  remove_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForRemoval $ _dynamicStack_pushed clearedStack
-  add_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ fmap reindexForAddition $ _dynamicStack_popped clearedStack
+  remove_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ traceEvent "removing" $ fmap reindexForRemoval $ _dynamicStack_pushed clearedStack
+  add_many_ev' :: Event t (Int, DynTodo t) <- repeatEvent $ traceEvent "adding" $ fmap reindexForAddition $ _dynamicStack_popped clearedStack
   let
     remove_many_ev :: Event t (Int, Int)
     remove_many_ev = fmap (\(i,_) -> (i,1)) remove_many_ev'
